@@ -1,6 +1,7 @@
 import requests
 import json
 from pathlib import Path
+import json_utils
 
 def binance_perps():
     r = requests.get("https://fapi.binance.com/fapi/v1/exchangeInfo").json()
@@ -22,19 +23,7 @@ TRADE_ABLE_BYBIT = bybit_perps()
 TRADE_ABLE_HYPERLIQUID = hyperliquid_perps()
 
 
-def _save_tradeables(var_name: str, data):
-    """Save a collection of symbols to exchanges/<VAR_NAME>.json as a sorted list."""
-    # Resolve project root (one level up from src/) and the exchanges folder
-    exchanges_dir = Path(__file__).resolve().parents[1] / "exchanges"
-    exchanges_dir.mkdir(parents=True, exist_ok=True)
-    out_path = exchanges_dir / f"{var_name}.json"
-    # Convert sets to sorted lists for stable output
-    serializable = sorted(list(data))
-    with out_path.open("w", encoding="utf8") as f:
-        json.dump(serializable, f, indent=2, ensure_ascii=False)
-
-
-# Persist the computed tradeable symbol lists to JSON files
-_save_tradeables("TRADE_ABLE_BINANCE", TRADE_ABLE_BINANCE)
-_save_tradeables("TRADE_ABLE_BYBIT", TRADE_ABLE_BYBIT)
-_save_tradeables("TRADE_ABLE_HYPERLIQUID", TRADE_ABLE_HYPERLIQUID)
+# Persist the computed tradeable symbol lists to JSON files (both exchanges/ and coinGecko/)
+json_utils.save_list_to_both("TRADE_ABLE_BINANCE", TRADE_ABLE_BINANCE)
+json_utils.save_list_to_both("TRADE_ABLE_BYBIT", TRADE_ABLE_BYBIT)
+json_utils.save_list_to_both("TRADE_ABLE_HYPERLIQUID", TRADE_ABLE_HYPERLIQUID)
