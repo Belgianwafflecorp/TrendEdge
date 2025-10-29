@@ -2,8 +2,9 @@ import json
 import requests
 from pathlib import Path
 import json_utils
-from CoinGecko import gecko_trending, gecko_top100, save_gecko_lists
 import logging
+from CoinGecko import gecko_trending, gecko_top100, save_gecko_lists
+from LunarCrush import galaxy50, alt_rank_top100, save_lunar_lists
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger(__name__)
@@ -40,32 +41,56 @@ def main():
     except Exception:
         logger.exception("Failed to save CoinGecko lists")
 
+    # Ensure LunarCrush lists are saved to disk so lunarCrush/ has latest data.
+    try:
+        lpaths = save_lunar_lists()
+        for p in lpaths:
+            logger.info("Saved LunarCrush list: %s", p)
+    except Exception:
+        logger.exception("Failed to save LunarCrush lists")
+
     # Prefer loading the CoinGecko lists from disk (written by save_gecko_lists()).
     # This avoids calling the CoinGecko APIs twice.
+    # Load CoinGecko lists from disk (preferred) and fall back to live fetch on error
     try:
-        trending = json_utils.load_list_from("coinGecko", "GECKO_TRENDING")
+        trending_gecko = json_utils.load_list_from("coinGecko", "GECKO_TRENDING")
     except Exception:
         logger.info("coinGecko/GECKO_TRENDING.json missing or unreadable; fetching live")
-        trending = gecko_trending()
+        trending_gecko = gecko_trending()
 
     try:
-        top100 = json_utils.load_list_from("coinGecko", "GECKO_TOP100")
+        top100_gecko = json_utils.load_list_from("coinGecko", "GECKO_TOP100")
     except Exception:
         logger.info("coinGecko/GECKO_TOP100.json missing or unreadable; fetching live")
-        top100 = gecko_top100()
+        top100_gecko = gecko_top100()
+
+    # Load LunarCrush lists from disk (preferred) and fall back to live fetch on error
+    try:
+        galaxy_lunar = json_utils.load_list_from("lunarCrush", "GALAXY50")
+    except Exception:
+        logger.info("lunarCrush/GALAXY50.json missing or unreadable; fetching live")
+        galaxy_lunar = galaxy50()
+
+    try:
+        top100_lunar = json_utils.load_list_from("lunarCrush", "ALT_RANK_TOP100")
+    except Exception:
+        logger.info("lunarCrush/ALT_RANK_TOP100.json missing or unreadable; fetching live")
+        top100_lunar = alt_rank_top100()
+
+    # Form the OR unions requested by the user
+    combined_trending = trending_gecko | galaxy_lunar      # gecko trending OR lunar galaxy50
+    combined_top100 = top100_gecko | top100_lunar         # gecko top100 OR lunar top100
 
     for exchange in EXCHANGES:
         tradeable = load_tradeable(exchange)
-        matched = tradeable & trending & top100  # the '&' test
-        final   = sorted(matched)
+        # Keep only symbols that are in both combined sets (top100 OR) AND (trending OR galaxy)
+        matched = tradeable & combined_trending & combined_top100
+        final = sorted(matched)
 
         # Save the screened result into screened/<EXCHANGE>.json (named exactly as requested)
         out_name = f"{exchange}"
-        json_utils.save_list_to("screened", out_name, final)
-
-    # Print a short confirmation to CLI
-    out_path = Path(__file__).resolve().parents[1] / "screened" / f"{out_name}.json"
-    logger.info("Wrote screened list for %s (%d items) to: %s", exchange, len(final), out_path)
+        p = json_utils.save_list_to("screened", out_name, final)
+        logger.info("Wrote screened list for %s (%d items) to: %s", exchange, len(final), p)
 
 if __name__ == "__main__":
     main()
