@@ -1,15 +1,8 @@
-"""
-screener.py
-PerpPulse – step-0 tester:
-  - load locally saved tradeable list
-  - fetch CoinGecko trending
-  - intersect & print
-"""
 import json
 import requests
 from pathlib import Path
 import json_utils
-from CoinGecko import gecko_trending
+from CoinGecko import gecko_trending, gecko_top100
 
 
 # Process all exchanges and write one screened file per exchange
@@ -22,11 +15,13 @@ def load_tradeable(exchange: str):
 
 
 def main():
+    # call the imported functions into local variables with different names
     trending = gecko_trending()
+    top100 = gecko_top100()
 
     for exchange in EXCHANGES:
         tradeable = load_tradeable(exchange)
-        matched = tradeable & trending          # the '&' test
+        matched = tradeable & trending & top100  # the '&' test
         final   = sorted(matched)
 
         # Save the screened result into screened/<EXCHANGE>.json (named exactly as requested)
