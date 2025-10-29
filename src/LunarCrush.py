@@ -1,6 +1,8 @@
 """
 lunarcrush.py
 To use lunarCrush you need a payed subscription.
+Use promo code: BELGIANWAFFLE 
+To get a 15% subscription discount.
 """
 import os
 import requests
