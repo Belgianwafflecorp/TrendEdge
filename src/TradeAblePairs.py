@@ -17,27 +17,42 @@ def binance_perps():
     return symbols
 
 def bybit_perps():
-        # Bybit v5 `instruments-info` returns the full list for the requested
-        logger.info("Fetching Bybit linear instruments")
-        base = "https://api.bybit.com/v5/market/instruments-info"
+    url = "https://api.bybit.com/v5/market/instruments-info"
+    logger.info("Fetching Bybit linear instruments")
+    symbols = set()
+    cursor = ""                       # start on first page
+    while True:
         try:
-            r = requests.get(base, params={"category": "linear"}, timeout=10)
+            logger.debug("Bybit: requesting cursor=%s", cursor)
+            r = requests.get(url,
+                             params={"category": "linear",
+                                    "limit": 200,
+                                    "cursor": cursor or None},
+                             timeout=10)
             r.raise_for_status()
-            js = r.json()
+            data = r.json().get("result", {})
         except Exception as e:
             logger.exception("Bybit request failed: %s", e)
-            return set()
+            # return what we have so caller can handle partial results
+            return symbols
 
-        lst = js.get("result", {}).get("list", [])
-        symbols = set()
+        lst = data.get("list", [])
+        if not lst:
+            break
+
         for d in lst:
             sym = d.get("symbol")
             if not sym:
                 continue
             symbols.add(sym.replace("USDT", "").replace("USDC", ""))
 
-        logger.info("Bybit instruments collected: %d symbols", len(symbols))
-        return symbols
+        logger.debug("Bybit: page returned %d symbols (cursor=%s)", len(lst), cursor)
+        cursor = data.get("nextPageCursor")
+        if not cursor:               # last page
+            break
+
+    logger.info("Bybit instruments collected: %d symbols", len(symbols))
+    return symbols
 
 def hyperliquid_perps():
     logger.info("Fetching Hyperliquid universes")
