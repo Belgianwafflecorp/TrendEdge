@@ -1,12 +1,25 @@
 import requests
 import json_utils
+import logging
 from typing import Optional, List
+
+logger = logging.getLogger(__name__)
+
 
 
 def gecko_trending() -> set[str]:
     """Return a set of uppercase symbols from CoinGecko's trending API."""
-    r = requests.get("https://api.coingecko.com/api/v3/search/trending").json()
-    return {coin["item"]["symbol"].upper() for coin in r["coins"]}
+    logger.info("Fetching CoinGecko trending")
+    try:
+        r = requests.get("https://api.coingecko.com/api/v3/search/trending", timeout=10)
+        r.raise_for_status()
+        js = r.json()
+        items = {coin["item"]["symbol"].upper() for coin in js.get("coins", [])}
+        logger.info("CoinGecko trending: %d symbols", len(items))
+        return items
+    except Exception as e:
+        logger.exception("Failed to fetch gecko trending: %s", e)
+        return set()
 
 
 def gecko_top100(timeout: float = 10.0) -> set[str]:
@@ -16,12 +29,15 @@ def gecko_top100(timeout: float = 10.0) -> set[str]:
     headers = {"User-Agent": "TrendEdge/1.0 (+https://your.repo.or.site)"}
 
     try:
+        logger.info("Fetching CoinGecko top100")
         resp = requests.get(url, params=params, timeout=timeout, headers=headers)
         resp.raise_for_status()
         data = resp.json()  # expected: list of coin dicts
-        return {(coin.get("symbol") or "").upper().strip() for coin in data if coin.get("symbol")}
-    except requests.RequestException:
-        # log or handle network/HTTP errors as appropriate; return empty set here
+        items = {(coin.get("symbol") or "").upper().strip() for coin in data if coin.get("symbol")}
+        logger.info("CoinGecko top100: %d symbols", len(items))
+        return items
+    except requests.RequestException as e:
+        logger.exception("Failed to fetch gecko top100: %s", e)
         return set()
 
 

@@ -186,6 +186,8 @@
   "DOG",
   "DOGE",
   "DOGE-07NOV25",
+  "DOGE-14NOV25",
+  "DOGE-28NOV25",
   "DOGE-31OCT25",
   "DOGEPERP",
   "DOLO",
@@ -359,6 +361,8 @@
   "MLN",
   "MNT",
   "MNT-07NOV25",
+  "MNT-14NOV25",
+  "MNT-28NOV25",
   "MNT-31OCT25",
   "MNTPERP",
   "MOCA",
@@ -492,9 +496,5 @@
   "SKY",
   "SKYAI",
   "SLP",
-  "SNT",
-  "SNX",
-  "SOL",
-  "SOLAYER",
-  "SOLPERP"
+  "SNT"
 ]

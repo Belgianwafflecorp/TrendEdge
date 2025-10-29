@@ -1,9 +1,11 @@
 import json
+import logging
 from pathlib import Path
 from typing import Iterable, Set
 
 
 ROOT = Path(__file__).resolve().parents[1]
+logger = logging.getLogger(__name__)
 
 
 def _ensure_dir(folder_name: str) -> Path:
@@ -22,17 +24,14 @@ def save_list_to(folder_name: str, var_name: str, data: Iterable) -> Path:
     out_path = out_dir / f"{var_name}.json"
     with out_path.open("w", encoding="utf8") as f:
         json.dump(serializable, f, indent=2, ensure_ascii=False)
+    logger.info("Wrote %d items to %s", len(serializable), out_path)
     return out_path
-
-
-def save_list_to_both(var_name: str, data: Iterable) -> None:
-    """Save the same list into both `exchanges/` and `coinGecko/` folders."""
-    save_list_to("exchanges", var_name, data)
-    save_list_to("coinGecko", var_name, data)
 
 
 def load_list_from(folder_name: str, var_name: str) -> Set[str]:
     """Load list JSON from <folder_name>/<var_name>.json and return a set of items."""
     path = ROOT / folder_name / f"{var_name}.json"
     with path.open(encoding="utf8") as f:
-        return set(json.load(f))
+        data = json.load(f)
+    logger.info("Loaded %d items from %s", len(data), path)
+    return set(data)
