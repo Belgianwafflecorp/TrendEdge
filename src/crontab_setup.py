@@ -2,7 +2,6 @@
 """
 crontab_setup.py
 One-time helper: add (or remove) the daily cron job to run screener.py at 08:00 daily.
-Requires the `crontab` package:  pip install python-crontab
 """
 import os
 import sys
@@ -15,7 +14,10 @@ PYTHON = sys.executable
 PROJECT = Path(__file__).resolve().parents[1]
 SHELL_SCRIPT = f"""#!/bin/bash
 cd {PROJECT}
-{PYTHON} src/screener.py >> logs/cron.log 2>&1
+LOG="logs/cron-$(date +%F).log"
+python src/screener.py > "$LOG" 2>&1
+# keep only last 7 days of logs
+find logs -name 'cron-*.log' -mtime +7 -delete
 """
 
 def install():
