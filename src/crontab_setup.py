@@ -9,19 +9,22 @@ from pathlib import Path
 from crontab import CronTab
 
 COMMENT = "TrendEdge-daily-screener"
-WRAPPER = Path.home() / "TrendEdge-daily.sh"
-PYTHON = sys.executable
 PROJECT = Path(__file__).resolve().parents[1]
+WRAPPER = PROJECT / "TrendEdge-daily.sh"
+PYTHON = sys.executable
+
 SHELL_SCRIPT = f"""#!/bin/bash
+set -euo pipefail
 cd {PROJECT}
+mkdir -p logs
 LOG="logs/cron-$(date +%F).log"
-python src/screener.py > "$LOG" 2>&1
+{PYTHON} src/screener.py > "$LOG" 2>&1
 # keep only last 7 days of logs
 find logs -name 'cron-*.log' -mtime +7 -delete
 """
 
 def install():
-    # create wrapper script
+    # Create wrapper script in repo root
     WRAPPER.write_text(SHELL_SCRIPT)
     os.chmod(WRAPPER, 0o755)
     print(f"Created wrapper: {WRAPPER}")
