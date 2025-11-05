@@ -11,14 +11,22 @@ from crontab import CronTab
 COMMENT = "TrendEdge-daily-screener"
 PROJECT = Path(__file__).resolve().parents[1]
 WRAPPER = PROJECT / "TrendEdge-daily.sh"
-PYTHON = sys.executable
+VENV_PYTHON = PROJECT / ".venv" / "bin" / "python"
 
 SHELL_SCRIPT = f"""#!/bin/bash
 set -euo pipefail
 cd {PROJECT}
 mkdir -p logs
+
+# Use venv Python if available, otherwise fall back to system python3
+if [ -f "{VENV_PYTHON}" ]; then
+    PYTHON="{VENV_PYTHON}"
+else
+    PYTHON="python3"
+fi
+
 LOG="logs/cron-$(date +%F).log"
-{PYTHON} src/screener.py > "$LOG" 2>&1
+"$PYTHON" src/screener.py > "$LOG" 2>&1
 # keep only last 7 days of logs
 find logs -name 'cron-*.log' -mtime +7 -delete
 """
